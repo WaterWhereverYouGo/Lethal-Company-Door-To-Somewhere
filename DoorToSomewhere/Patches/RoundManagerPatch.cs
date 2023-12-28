@@ -1,29 +1,11 @@
-﻿using BepInEx;
-using DunGen;
-using GameNetcodeStuff;
-using BepInEx.Logging;
+﻿using DunGen;
 using HarmonyLib;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Animations;
-using UnityEngine.Events;
-using UnityEngine.Audio;
-using BepInEx.Configuration;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.ComponentModel;
-using System.Data;
-using HarmonyLib.Tools;
-using DoorToSomewhereMod;
 using DoorToSomewhereMod.Networker;
 using DoorToSomewhereMod.Object;
-using System.Runtime.InteropServices;
 using DoorToSomewhereMod.Logger;
 
 namespace DoorToSomewhereMod.Patches
@@ -40,7 +22,7 @@ namespace DoorToSomewhereMod.Patches
             try
             {
                 // Patch SetExitIDs.
-
+                SetExitIDsPatch(ref __instance, mainEntrancePosition);
             }
             catch (Exception e)
             {
@@ -171,7 +153,6 @@ namespace DoorToSomewhereMod.Patches
                         if (sillyDoorContainer.activeSelf) { continue; }   
                         */
 
-
                         Matrix4x4 rotationMatrix = Matrix4x4.TRS(doorway.transform.position, doorway.transform.rotation, Vector3.one);
                         Bounds bounds = new Bounds(new Vector3(0f, 1.5f, 5.5f), new Vector3(2f, 6f, 8f));
                         bounds.center = rotationMatrix.MultiplyPoint3x4(bounds.center);
@@ -243,7 +224,7 @@ namespace DoorToSomewhereMod.Patches
 
                     // Keep track of networking with indexs for each door.
                     DoorToSomewhere.allDoors.Add(doorToSomewhere);
-                    doorToSomewhere.mimicIndex = currentIndex;
+                    doorToSomewhere.doorIndex = currentIndex;
                     currentIndex++;
 
                     // Turn off the wall behind the door to somewhere.
@@ -270,8 +251,8 @@ namespace DoorToSomewhereMod.Patches
                         }
                     }
 
-                    doorToSomewhere.interactTrigger.onInteract = new InteractEvent();
-                    doorToSomewhere.interactTrigger.onInteract.AddListener(doorToSomewhere.TouchDoor);
+                    //doorToSomewhere.interactTrigger.onInteract = new InteractEvent();
+                    //doorToSomewhere.interactTrigger.onInteract.AddListener(doorToSomewhere.TouchDoor);
 
                     // Could randomly assign different properties for door here.
 

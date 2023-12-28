@@ -12,6 +12,7 @@ namespace DoorToSomewhereMod.Logger
         {
             Instance = this;
         }
+
         public static void LogException(MethodBase methodBase, Exception e)
         {
             string functionPath = methodBase.DeclaringType.Name + "." + methodBase.Name;
