@@ -5,6 +5,7 @@ using Unity.Netcode;
 using UnityEngine;
 using DoorToSomewhereMod.Logger;
 
+/*
 namespace DoorToSomewhereMod.Patches
 {
     [HarmonyPatch(typeof(GameNetworkManager))]
@@ -17,7 +18,8 @@ namespace DoorToSomewhereMod.Patches
             try
             {
                 // Register the networker prefab.
-                GameNetworkManager.Instance.GetComponent<NetworkManager>().AddNetworkPrefab(__DoorToSomewhereNetworkerPrefab);
+                // GameNetworkManager.Instance.GetComponent<NetworkManager>().AddNetworkPrefab(__DoorToSomewhereNetworkerPrefab);
+                return;
             }
             catch (Exception e)
             {
@@ -26,3 +28,4 @@ namespace DoorToSomewhereMod.Patches
         }
     }
 }
+*/

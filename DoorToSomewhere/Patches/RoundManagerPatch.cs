@@ -7,6 +7,8 @@ using UnityEngine;
 using DoorToSomewhereMod.Networker;
 using DoorToSomewhereMod.Object;
 using DoorToSomewhereMod.Logger;
+using Unity.Netcode;
+using System.ComponentModel;
 
 namespace DoorToSomewhereMod.Patches
 {
@@ -15,24 +17,9 @@ namespace DoorToSomewhereMod.Patches
     {
         private static int numSpawnedDoorsToSomewhere = 0;
 
-        [HarmonyPatch("Start")]
-        [HarmonyPostfix]
-        static void StartPatch(ref RoundManager __instance, Vector3 mainEntrancePosition)
-        {
-            try
-            {
-                // Patch SetExitIDs.
-                SetExitIDsPatch(ref __instance, mainEntrancePosition);
-            }
-            catch (Exception e)
-            {
-                LocalLogger.LogException(MethodBase.GetCurrentMethod(), e);
-            }
-        }
-
         [HarmonyPatch("SetExitIDs")]
         [HarmonyPostfix]
-        static void SetExitIDsPatch(ref RoundManager __instance, Vector3 mainEntrancePosition)
+        static void SetExitIDsPatch(ref RoundManager __instance)
         {
             try
             {
@@ -46,11 +33,20 @@ namespace DoorToSomewhereMod.Patches
                     return;
                 }
 
-                // Spawn doors with weighted spawn rates.
-                SpawnDoors(ref __instance);
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} calling SetupDoorPrefab.");
+
+                // Obtain a normal door prefab in the dungeon to use.
+                SetupDoorPrefab(ref __instance);
+
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} calling CalculateNumberOfDoorsToSpawn.");
+
+                // Calculate number of doors to spawn with weighted spawn rates.
+                CalculateNumberOfDoorsToSpawn(ref __instance);
+
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} calling SetDoors.");
 
                 // Set doors with valid positions.
-                SetDoors(ref __instance, mainEntrancePosition);
+                SetDoors(ref __instance);
 
             }
             catch (Exception e)
@@ -59,12 +55,97 @@ namespace DoorToSomewhereMod.Patches
             }
         }
 
-        static void SpawnDoors(ref RoundManager __instance)
+        static void SetupDoorPrefab(ref RoundManager __instance)
         {
             try
             {
+
+                Dungeon dungeon = __instance.dungeonGenerator.Generator.CurrentDungeon;
+                GameObject normalDoorPrefab = null;
+
+                // Lets get a door prefab to use for when we set the door.
+                foreach (Tile tile in dungeon.AllTiles)
+                {
+                    foreach (Doorway doorway in tile.AllDoorways)
+                    {
+                        if (!doorway.HasDoorPrefabInstance)
+                        {
+                            // Didn't find a door prefab, continue to look.
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway did not have a prefab instance. {doorway}.");
+                            continue;
+                        }
+
+                        if (doorway.UsedDoorPrefabInstance == null)
+                        {
+                            // Didn't find the prefab, continue to look.
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway had null door prefab instance. {doorway}.");
+                            continue;
+                        }
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway has GameObject. {doorway}.");
+
+                        if (doorway.DoorComponent == null)
+                        {
+                            // Didn't find the prefab, continue to look.
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway had null door component. {doorway}.");
+                            continue;
+                        }
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway has a door. {doorway}.");
+
+                        normalDoorPrefab = doorway.UsedDoorPrefabInstance;
+                        break;
+                    }
+
+                    if (normalDoorPrefab != null)
+                    {
+                        break;
+                    }    
+                }
+
+                if (normalDoorPrefab == null)
+                {
+                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to find a normal door prefab.");
+                    throw new Exception("Failed to find a normal door prefab.");
+                }
+
+                DoorToSomewhereBase.DoorToSomewherePrefab = normalDoorPrefab;
+
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} finished finding normal door prefab.");
+
+                // Create networker with networker prefab.
+                foreach (var component in normalDoorPrefab.GetComponents<NetworkObject>())
+                {
+                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} found NetworkObject {component}.");
+                }
+
+                foreach (var component in normalDoorPrefab.GetComponents<NetworkBehaviour>())
+                {
+                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} found NetworkBehaviour {component}.");
+                }
+                //GameObject doorToSomewhereNetworker = GameObject.Instantiate(DoorToSomewhereBase.DoorToSomewhereNetworkerPrefab);
+                //doorToSomewhereNetworker.GetComponent<NetworkObject>().Spawn(true);
+            }
+            catch (Exception e)
+            {
+                LocalLogger.LogException(MethodBase.GetCurrentMethod(), e);
+                throw;
+            }
+        }
+
+        static void CalculateNumberOfDoorsToSpawn(ref RoundManager __instance)
+        {
+            try
+            {
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} calculating doors to spawn.");
+
                 // Spawn doors with weighted spawn rates.
-                int[] spawnRates = DoorToSomewhereNetworker.SpawnWeights.Value;
+                int[] spawnRates = new int[DoorToSomewhereNetworker.SpawnWeights.Length];
+                
+                for (int i = 0; i < DoorToSomewhereNetworker.SpawnWeights.Length; i++)
+                {
+                    spawnRates[i] = DoorToSomewhereNetworker.SpawnWeights[i].Value;
+                }
 
                 // Calculate total weight.
                 int totalWeight = 0;
@@ -111,19 +192,23 @@ namespace DoorToSomewhereMod.Patches
 
                 }
 
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} finished calculating number of doors to spawn {numSpawnedDoorsToSomewhere}.");
+
             }
             catch (Exception e)
             {
                 LocalLogger.LogException(MethodBase.GetCurrentMethod(), e); 
-                throw e;
+                throw;
             }
 
         }
 
-        static void SetDoors(ref RoundManager __instance, Vector3 mainEntrancePosition)
+        static void SetDoors(ref RoundManager __instance)
         {
             try
             {
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} setting doors.");
+
                 // Find valid positions for doors.
                 List<Doorway> validDoorways = new List<Doorway>();
 
@@ -135,12 +220,14 @@ namespace DoorToSomewhereMod.Patches
                         // Don't use doorway if a door is already present.
                         if (doorway.HasDoorPrefabInstance)
                         {
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway had a prefab instance. Continue to search.");
                             continue;
                         }
 
                         // Don't use doorway if there is no component necessary for creating the game object.
                         if (doorway.GetComponentInChildren<SpawnSyncedObject>(true) == null)
                         {
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway did not have a component for creating the game object. Continue to search.");
                             continue;
                         }
 
@@ -159,6 +246,8 @@ namespace DoorToSomewhereMod.Patches
                         Collider[] badPositionCheck = Physics.OverlapBox(bounds.center, bounds.extents, doorway.transform.rotation, LayerMask.GetMask("Room", "Railing", "MapHazards"));
                         bool badPosition = false;
 
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} calculated. Before collider check.");
+
                         // Check for colliders and prevent spawning a door in a bad position.
                         foreach (Collider collider in badPositionCheck)
                         {
@@ -169,19 +258,26 @@ namespace DoorToSomewhereMod.Patches
 
                         if (badPosition)
                         {
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} bad position. Continue to search.");
                             continue;
                         }
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} added doorway. {doorway}.");
 
                         // Good doorway!
                         validDoorways.Add(doorway);
                     }
                 }
-                        
+
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} shuffling doorways.");
+
                 // Shuffle valid doorways for random selection.
                 Shuffle<Doorway>(validDoorways, StartOfRound.Instance.randomMapSeed + 42);
 
                 List<Vector3> doorToSomewhereLocations = new List<Vector3>();
                 int currentIndex = 0;
+
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} starting to set doors.");
 
                 // Set doors to locations.
                 foreach (Doorway doorway in validDoorways)
@@ -189,6 +285,7 @@ namespace DoorToSomewhereMod.Patches
                     if (currentIndex >= numSpawnedDoorsToSomewhere)
                     {
                         // Finished setting doors.
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} finished spawning {numSpawnedDoorsToSomewhere} doors.");
                         return;
                     }
 
@@ -198,6 +295,7 @@ namespace DoorToSomewhereMod.Patches
                     {
                         if (Vector3.Distance(doorLocation, newLocation) < 4f)
                         {
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway already used {newLocation} and {doorLocation}.");
                             locationUsed = true;
                             break;
                         }
@@ -206,9 +304,11 @@ namespace DoorToSomewhereMod.Patches
                     if (locationUsed)
                     {
                         // Doors too close to eachother.
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} door too close to another door, moving along.");
                         continue;
                     }
 
+                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} adding location {newLocation}.");
                     doorToSomewhereLocations.Add(newLocation);
 
                     GameObject sillyDoorContainer = doorway.GetComponentInChildren<SpawnSyncedObject>(true).transform.parent.gameObject;
@@ -216,10 +316,23 @@ namespace DoorToSomewhereMod.Patches
                     sillyDoor.transform.position = sillyDoorContainer.transform.position;
                     DoorToSomewhere doorToSomewhere = sillyDoor.GetComponent<DoorToSomewhere>();
 
-                    if (DoorToSomewhereNetworker.SpawnWeights.Value[5] == 4242)
+                    if (doorToSomewhere == null)
                     {
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} door not instantiated. Failed to get component.");
+                        continue;
+                    }
+
+                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} door instantiated.");
+
+                    if (DoorToSomewhereNetworker.SpawnWeights[5].Value == 4242)
+                    {
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} should debug door be added?");
                         // Spawn a door by the ship for testing.
-                        if (currentIndex == 0) { sillyDoor.transform.position = new Vector3(-7f, 0f, -10f); }
+                        if (currentIndex == 0) 
+                        { 
+                            sillyDoor.transform.position = new Vector3(-7f, 0f, -10f);
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} debug door added.");
+                        }
                     }
 
                     // Keep track of networking with indexs for each door.
@@ -227,9 +340,14 @@ namespace DoorToSomewhereMod.Patches
                     doorToSomewhere.doorIndex = currentIndex;
                     currentIndex++;
 
+
+                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} messing with the wall behind the door.");
+
                     // Turn off the wall behind the door to somewhere.
                     GameObject wall = doorway.transform.GetChild(0).gameObject;
                     wall.SetActive(false);
+
+                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} collider checking.");
 
                     // This might not be necessary!!
                     foreach (Collider collider in Physics.OverlapBox(doorToSomewhere.frameBox.bounds.center, doorToSomewhere.frameBox.bounds.extents, Quaternion.identity))
@@ -239,6 +357,8 @@ namespace DoorToSomewhereMod.Patches
                             collider.gameObject.SetActive(false);
                         }
                     }
+
+                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} mesh assignment.");
 
                     MeshRenderer[] meshes = sillyDoor.GetComponentsInChildren<MeshRenderer>();
                     foreach (MeshRenderer mesh in meshes)
@@ -251,6 +371,8 @@ namespace DoorToSomewhereMod.Patches
                         }
                     }
 
+                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} finished setting door {currentIndex}.");
+
                     //doorToSomewhere.interactTrigger.onInteract = new InteractEvent();
                     //doorToSomewhere.interactTrigger.onInteract.AddListener(doorToSomewhere.TouchDoor);
 
@@ -262,22 +384,29 @@ namespace DoorToSomewhereMod.Patches
             catch (Exception e)
             {
                 LocalLogger.LogException(MethodBase.GetCurrentMethod(), e); 
-                throw e;
+                throw;
             }
         }
 
         public static void Shuffle<T>(IList<T> list, int seed)
         {
-            var rng = new System.Random(seed);
-            int n = list.Count;
-
-            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} shuffling a count of: {n}");
-
-            while (n > 1)
+            try
             {
-                int k = (rng.Next(0, n));
-                n--;
-                (list[n], list[k]) = (list[k], list[n]);
+                var rng = new System.Random(seed);
+                int n = list.Count;
+
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} shuffling a count of: {n}");
+
+                while (n > 1)
+                {
+                    int k = (rng.Next(0, n));
+                    n--;
+                    (list[n], list[k]) = (list[k], list[n]);
+                }
+            }
+            catch (Exception e)
+            {
+                LocalLogger.LogException(MethodBase.GetCurrentMethod(), e);
             }
         }
     }

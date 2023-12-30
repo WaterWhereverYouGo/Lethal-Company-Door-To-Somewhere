@@ -30,21 +30,19 @@ namespace DoorToSomewhereMod.Patches
                     return;
                 }
 
-                // Create networker with networker prefab.
-                GameObject doorToSomewhereNetworker = GameObject.Instantiate(DoorToSomewhereBase.DoorToSomewhereNetworkerPrefab);
-                doorToSomewhereNetworker.GetComponent<NetworkObject>().Spawn(true);
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} patching StartOfRound.");
+
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} spawn rates array length is {DoorToSomewhereBase.SpawnRates.Length}.");
+                Networker.DoorToSomewhereNetworker.SpawnWeights = new NetworkVariable<int>[DoorToSomewhereBase.SpawnRates.Length];
 
                 // Assign spawn rates.
-                Networker.DoorToSomewhereNetworker.SpawnWeights.Value = DoorToSomewhereBase.SpawnRates;
-                /*
-                Networker.DoorToSomewhereNetworker.SpawnWeight0.Value = SpawnRates[0];
-                Networker.DoorToSomewhereNetworker.SpawnWeight1.Value = SpawnRates[1];
-                Networker.DoorToSomewhereNetworker.SpawnWeight2.Value = SpawnRates[2];
-                Networker.DoorToSomewhereNetworker.SpawnWeight3.Value = SpawnRates[3];
-                Networker.DoorToSomewhereNetworker.SpawnWeight4.Value = SpawnRates[4];
-                Networker.DoorToSomewhereNetworker.SpawnWeightMax.Value = SpawnRates[5];
-                */
-                Networker.DoorToSomewhereNetworker.SpawnRateDynamic.Value = DoorToSomewhereBase.DynamicSpawnRate;
+                for (int i = 0; i < DoorToSomewhereBase.SpawnRates.Length; i++)
+                {
+                    Networker.DoorToSomewhereNetworker.SpawnWeights[i] = new NetworkVariable<int>(DoorToSomewhereBase.SpawnRates[i]);
+                }
+
+                //DoorToSomewhereBase.SpawnRates.CopyTo(Networker.DoorToSomewhereNetworker.SpawnWeights.Value, 0);
+                Networker.DoorToSomewhereNetworker.SpawnRateDynamic = new NetworkVariable<bool>(DoorToSomewhereBase.DynamicSpawnRate);
             }
             catch (Exception e)
             {

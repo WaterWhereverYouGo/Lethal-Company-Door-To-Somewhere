@@ -27,7 +27,7 @@ using DoorToSomewhereMod.Networker;
 
 namespace DoorToSomewhereMod.Object
 {
-    public class DoorToSomewhere : MonoBehaviour
+    public class DoorToSomewhere : Door
     {
         public static DoorToSomewhere Instance;
 
@@ -38,12 +38,13 @@ namespace DoorToSomewhereMod.Object
         public ScanNodeProperties scanNode;
         public int sprayCount = 0;
 
-        public static List<DoorToSomewhere> allDoors;
-        public int doorIndex;
+        public static List<DoorToSomewhere> allDoors = new List<DoorToSomewhere>();
+        public int doorIndex = 0;
 
         private void Awake()
         {
             Instance = this;
         }
+
     }
 }

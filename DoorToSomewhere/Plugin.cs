@@ -39,10 +39,15 @@ namespace DoorToSomewhereMod
                     Instance = this;
                 }
 
+                /*
                 AssetBundle doorToSomewhereBundle = AssetBundle.LoadFromMemory(LethalCompanyDoorToSomewhere.Properties.Resources.doorToSomewhere);
                 DoorToSomewherePrefab = doorToSomewhereBundle.LoadAsset<GameObject>("Assets/DoorToSomewhere.prefab");
                 DoorToSomewhereNetworkerPrefab = doorToSomewhereBundle.LoadAsset<GameObject>("Assets/DoorToSomewhereNetworker.prefab");
                 DoorToSomewhereFile = doorToSomewhereBundle.LoadAsset<TerminalNode>("Assets/DoorToSomewhereFile.asset");
+                */
+                DoorToSomewherePrefab = null;
+                DoorToSomewhereNetworkerPrefab = null;
+                DoorToSomewhereFile = null;
 
                 // Handle configuration.
                 ConfigSettings.Bind();

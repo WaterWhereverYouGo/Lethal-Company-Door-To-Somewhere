@@ -12,13 +12,13 @@ using System.Runtime.CompilerServices;
 
 namespace DoorToSomewhereMod.Networker
 {
-    public class DoorToSomewhereNetworker : NetworkBehaviour
+    [RequireComponent(typeof(InteractTrigger))]
+    public class DoorToSomewhereNetworker : DoorLock
     {
         public static DoorToSomewhereNetworker Instance;
 
         public AudioSource teleporterAudio;
         public AudioClip teleporterBeamUpSFX;
-        public AudioClip startTeleportingSFX;
         public AudioClip teleporterPrimeSFX;
 
         public float teleporterChargeUp = 2f;
@@ -26,15 +26,10 @@ namespace DoorToSomewhereMod.Networker
         private List<PlayerControllerB> teleportingPlayers = new List<PlayerControllerB>();
         private List<EnemyAI> teleportingEnemies = new List<EnemyAI>();
 
-        public static NetworkVariable<int[]> SpawnWeights = new NetworkVariable<int[]>();
+        public static NetworkVariable<int>[] SpawnWeights = new NetworkVariable<int>[] {null};
         public static NetworkVariable<bool> SpawnRateDynamic = new NetworkVariable<bool>();
 
-        private void Awake()
-        {
-            Instance = this;
-        }
-
-        private void OnTeleport(Collider entity)
+        public void OnTriggerEnter(Collider entity)
         {
             try
             {
@@ -218,12 +213,6 @@ namespace DoorToSomewhereMod.Networker
                 LocalLogger.LogException(MethodBase.GetCurrentMethod(), e);
                 return Vector3.zero;
             }
-        }
-
-        private IEnumerator PlayTeleportAudio()
-        {
-            yield return new WaitForSeconds(0.2f);
-            teleporterAudio.PlayOneShot(startTeleportingSFX);
         }
 
         // Coroutines.
