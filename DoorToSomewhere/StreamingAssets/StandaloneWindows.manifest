@@ -1,0 +1,7 @@
+ManifestFileVersion: 0
+CRC: 3647916375
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: portal
+      Dependencies: {}
