@@ -25,6 +25,7 @@ namespace DoorToSomewhereMod
         public static GameObject DoorToSomewhereNetworkerPrefab;
         public static TerminalNode DoorToSomewhereFile;
         public static Material portalMaterial;
+        public static Mesh portalMesh;
 
         public static int[] SpawnRates;
         public static bool DynamicSpawnRate;
@@ -42,39 +43,25 @@ namespace DoorToSomewhereMod
                     Instance = this;
                 }
 
-
-                //AssetBundle doorToSomewhereBundle = AssetBundle.LoadFromFile (Path.Combine(Application.streamingAssetsPath, "portal"));
-
-                //AssetBundle doorToSomewhereBundle = AssetBundle.LoadFromFile($"{Application.streamingAssetsPath}/Assets/portal");
-
                 AssetBundle doorToSomewhereBundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "portal"));
 
                 if (doorToSomewhereBundle == null)
                 {
-                    logger.LogInfo($"Plugin {modName} failed to load asset bundle.");
-                    throw new Exception("Failed to load asset bundle.");
+                    throw new Exception("Failed to load asset bundle");
                 }
 
-                logger.LogInfo($"Plugin {modName} loaded asset bundle successfully.");
+                portalMaterial = doorToSomewhereBundle.LoadAsset<Material>("Assets/Materials/normal_portal_mat.mat");
+                portalMesh = doorToSomewhereBundle.LoadAsset<Mesh>("Assets/Mesh/Portal_mesh.asset");
 
-                //DoorToSomewherePrefab = doorToSomewhereBundle.LoadAsset<GameObject>("Assets/DoorToSomewhere.prefab");
-                //DoorToSomewhereNetworkerPrefab = doorToSomewhereBundle.LoadAsset<GameObject>("Assets/DoorToSomewhereNetworker.prefab");
-                //DoorToSomewhereFile = doorToSomewhereBundle.LoadAsset<TerminalNode>("Assets/DoorToSomewhereFile.asset");
-
-                portalMaterial = doorToSomewhereBundle.LoadAsset<Material>("Assets/Shaders/normal_portal_mat");
-                
                 if (portalMaterial == null)
-                {
-                    logger.LogInfo($"Plugin {modName} failed to load material.");
+                { 
+                    throw new Exception("Failed to load material");
+                }
 
-                    portalMaterial = doorToSomewhereBundle.LoadAsset<Material>("Assets/Shaders/normal_portal_mat.mat");
-
-                    if (portalMaterial == null)
-                    {
-                        logger.LogInfo($"Plugin {modName} still failed to load material.");
-                        throw new Exception("Failed to load material.");
-                    }
-                }    
+                if (portalMesh == null)
+                { 
+                    throw new Exception("Failed to load mesh");
+                }
 
                 DoorToSomewherePrefab = null;
                 DoorToSomewhereNetworkerPrefab = null;
@@ -84,6 +71,7 @@ namespace DoorToSomewhereMod
                 ConfigSettings.Bind();
 
                 // Patch changes.
+                harmony.PatchAll(typeof(DoorToSomewhereBase));
                 harmony.PatchAll();
                 logger.LogInfo($"Plugin {modName} loaded.");
 
@@ -106,6 +94,23 @@ namespace DoorToSomewhereMod
             {
                 LocalLogger.LogException(MethodBase.GetCurrentMethod(), e);
             }
+        }
+
+        // Just something for testing, thanks Angel-Madeline!
+        [HarmonyPatch(typeof(RoundManager), "LoadNewLevel")]
+        [HarmonyPrefix]
+        private static bool NoMonstersSpawn(ref SelectableLevel newLevel)
+        {
+            foreach (SpawnableEnemyWithRarity Enemy in newLevel.Enemies)
+            {
+                Enemy.rarity = 0;
+            }
+            foreach (SpawnableEnemyWithRarity Enemy in newLevel.OutsideEnemies)
+            {
+                Enemy.rarity = 0;
+            }
+            logger.LogInfo($"Removed All Enemies.");
+            return true;
         }
     }
 

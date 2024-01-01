@@ -19,20 +19,20 @@ namespace DoorToSomewhereMod.Patches
                 // Ensure instance is server.
                 if (!__instance.IsServer)
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} will not patch StartOfRound when instance is not the server.");
+                    DoorToSomewhereBase.logger.LogInfo($"Will not patch StartOfRound when instance is not the server.");
                     return;
                 }
 
                 // Ensure that networker does not already have an instance.
                 if (Networker.DoorToSomewhereNetworker.Instance != null)
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} will not patch StartOfRound when networker instance exists.");
+                    DoorToSomewhereBase.logger.LogInfo($"Will not patch StartOfRound when networker instance exists.");
                     return;
                 }
 
-                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} patching StartOfRound.");
+                DoorToSomewhereBase.logger.LogInfo($"Patching StartOfRound.");
 
-                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} spawn rates array length is {DoorToSomewhereBase.SpawnRates.Length}.");
+                DoorToSomewhereBase.logger.LogInfo($"Spawn rates array length is {DoorToSomewhereBase.SpawnRates.Length}.");
                 Networker.DoorToSomewhereNetworker.SpawnWeights = new NetworkVariable<int>[DoorToSomewhereBase.SpawnRates.Length];
 
                 // Assign spawn rates.

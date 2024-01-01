@@ -43,7 +43,7 @@ namespace DoorToSomewhereMod.Networker
                 }
                 else
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: Unknown entity {entity}.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: Unknown entity {entity}.");
                 }
             }
             catch (Exception e)
@@ -55,35 +55,35 @@ namespace DoorToSomewhereMod.Networker
         {
             try
             {
-                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} attempting to teleport player.");
+                DoorToSomewhereBase.logger.LogInfo($"Attempting to teleport player.");
 
                 PlayerControllerB playerControllerB = entity.gameObject.GetComponent<PlayerControllerB>();
 
                 // Don't teleport player entity if the player controller is null.
                 if (playerControllerB == null)
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: Player controller is null.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: Player controller is null.");
                     return;
                 }
 
                 // Don't teleport player entity if the player controller does not match up.
                 if (playerControllerB != GameNetworkManager.Instance.localPlayerController)
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: Player controller is not the local player controller.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: Player controller is not the local player controller.");
                     return;
                 }
 
                 // Don't teleport player entity if the player controller is already being teleported.
                 if (teleportingPlayers.Contains(playerControllerB))
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: Player controller is already being teleported.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: Player controller is already being teleported.");
                     return;
                 }
 
                 // Don't teleport player entity if there are no locations to telport to.
                 if (RoundManager.Instance.insideAINodes.Length == 0)
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: Nowhere to teleport to.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: Nowhere to teleport to.");
                     return;
                 }
 
@@ -94,7 +94,7 @@ namespace DoorToSomewhereMod.Networker
 
                 if (position3 == Vector3.zero)
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: New position is invalid.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: New position is invalid.");
                     return;
                 }
 
@@ -117,14 +117,14 @@ namespace DoorToSomewhereMod.Networker
         {
             try
             {
-                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} attempting to teleport enemy.");
+                DoorToSomewhereBase.logger.LogInfo($"Attempting to teleport enemy.");
 
                 EnemyAICollisionDetect enemyAICollision = entity.gameObject.GetComponent<EnemyAICollisionDetect>();
 
                 // Don't teleport enemy entity if the enemy collision is null.
                 if (enemyAICollision == null)
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: Enemy collision is null.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: Enemy collision is null.");
                     return;
                 }
 
@@ -133,14 +133,14 @@ namespace DoorToSomewhereMod.Networker
                 // Don't teleport enemy entity if the enemy is already being teleported.
                 if (teleportingEnemies.Contains(enemyAI))
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: Enemy is already being teleported.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: Enemy is already being teleported.");
                     return;
                 }
 
                 // Don't teleport enemy entity if there are no locations to telport to.
                 if (RoundManager.Instance.insideAINodes.Length == 0)
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: Nowhere to teleport to.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: Nowhere to teleport to.");
                     return;
                 }
 
@@ -151,7 +151,7 @@ namespace DoorToSomewhereMod.Networker
 
                 if (position3 == Vector3.zero)
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: New position is invalid.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: New position is invalid.");
                     return;
                 }
 
@@ -179,25 +179,25 @@ namespace DoorToSomewhereMod.Networker
                     Vector3 tempPosition = RoundManager.Instance.insideAINodes[randomNodeIndex].transform.position;
                     tempPosition = RoundManager.Instance.GetRandomNavMeshPositionInRadiusSpherical(tempPosition);
 
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} possible teleport position {tempPosition}.");
+                    DoorToSomewhereBase.logger.LogInfo($"Possible teleport position {tempPosition}.");
 
                     // Is this new position certain death that will kill the player?
                     if (Physics.Raycast(tempPosition, Vector3.down, out var hitInfo, 80f, 268437760, QueryTriggerInteraction.Ignore))
                     {
                         Vector3 targetFloorPosition = hitInfo.point;
-                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} target floor position {targetFloorPosition}.");
+                        DoorToSomewhereBase.logger.LogInfo($"Target floor position {targetFloorPosition}.");
 
                         float differenceInHeight = Math.Abs(targetFloorPosition.z - tempPosition.z);
 
                         if (differenceInHeight > 10)
                         {
-                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} possible teleport position looks like certain death. Lets keep looking.");
+                            DoorToSomewhereBase.logger.LogInfo($"Possible teleport position looks like certain death. Lets keep looking.");
                             continue;
                         }
                     }
                     else
                     {
-                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to get raycast. Lets keep looking.");
+                        DoorToSomewhereBase.logger.LogInfo($"Failed to get raycast. Lets keep looking.");
                         continue;
                     }
 
@@ -275,7 +275,7 @@ namespace DoorToSomewhereMod.Networker
         {
             if (!enemy.TryGet(out NetworkObject enemyObj))
             {
-                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to teleport: Enemy network object reference was not resolved to a network object.");
+                DoorToSomewhereBase.logger.LogInfo($"Failed to teleport: Enemy network object reference was not resolved to a network object.");
                 return;
             }
 

@@ -16,7 +16,7 @@ namespace DoorToSomewhereMod.Logger
         public static void LogException(MethodBase methodBase, Exception e)
         {
             string functionPath = methodBase.DeclaringType.Name + "." + methodBase.Name;
-            DoorToSomewhereBase.logger.LogError($"EXCEPTION OCCURRED: Plugin {DoorToSomewhereBase.modName} failed in {functionPath}. {e.Message}.\n{e.StackTrace}");
+            DoorToSomewhereBase.logger.LogError($"EXCEPTION OCCURRED: Failed in {functionPath}. {e.Message}.\n{e.StackTrace}");
         }
     }
 }

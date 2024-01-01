@@ -23,7 +23,7 @@ namespace DoorToSomewhereMod.Configuration
             try
             {
 
-                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} binding config settings.");
+                DoorToSomewhereBase.logger.LogInfo($"Binding config settings.");
 
                 // Create configuration file with defaults for spawn rate.
                 SpawnRates = new ConfigEntry<int>[]
@@ -38,10 +38,10 @@ namespace DoorToSomewhereMod.Configuration
 
                 DynamicSpawnRate = DoorToSomewhereBase.Instance.Config.Bind("Spawn Rate", "Dynamic Spawn Rate", true, "Increases door spawn rate based on dungeon size.");
 
-                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} saving config settings.");
+                DoorToSomewhereBase.logger.LogInfo($"Saving config settings.");
                 DoorToSomewhereBase.Instance.Config.Save();
 
-                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} assigning config settings in base.");
+                DoorToSomewhereBase.logger.LogInfo($"Assigning config settings in base.");
 
                 int[] SpawnRatesValues = new int[SpawnRates.Length];
 
@@ -52,8 +52,8 @@ namespace DoorToSomewhereMod.Configuration
 
                 if (SpawnRatesValues.Length != SpawnRates.Length)
                 {
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to pull values from the spawn rates array.");
-                    throw new Exception("Failed to pull values from spawn rates array.");
+                    DoorToSomewhereBase.logger.LogInfo($"Failed to pull values from the spawn rates array.");
+                    throw new Exception("Failed to pull values from spawn rates array");
                 }
 
                 DoorToSomewhereBase.SpawnRates = new int[SpawnRatesValues.Length];
@@ -65,12 +65,12 @@ namespace DoorToSomewhereMod.Configuration
 
                 DoorToSomewhereBase.DynamicSpawnRate = DynamicSpawnRate.Value;
 
-                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} finished saving and loading config settings.\nSpawn Rates = {string.Join(", ", DoorToSomewhereBase.SpawnRates)}\nDynamic Spawn Rate = {DoorToSomewhereBase.DynamicSpawnRate}");
+                DoorToSomewhereBase.logger.LogInfo($"Finished saving and loading config settings.\nSpawn Rates = {string.Join(", ", DoorToSomewhereBase.SpawnRates)}\nDynamic Spawn Rate = {DoorToSomewhereBase.DynamicSpawnRate}");
             }
             catch (Exception e)
             {
                 // Fall back on some default values.
-                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} falling back on default values for config settings.");
+                DoorToSomewhereBase.logger.LogInfo($"Falling back on default values for config settings.");
 
                 DoorToSomewhereBase.SpawnRates = new int[]
                 {
