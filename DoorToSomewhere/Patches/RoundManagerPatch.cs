@@ -15,6 +15,7 @@ namespace DoorToSomewhereMod.Patches
     [HarmonyPatch(typeof(RoundManager))]
     internal class RoundManagerPatch
     {
+        static Doorway doorwayToUse;
         private static int numSpawnedDoorsToSomewhere = 0;
 
         [HarmonyPatch("SetExitIDs")]
@@ -94,6 +95,7 @@ namespace DoorToSomewhereMod.Patches
                         DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway has a door. {doorway}.");
 
                         normalDoorPrefab = doorway.UsedDoorPrefabInstance;
+                        doorwayToUse = doorway;
                         break;
                     }
 
@@ -110,6 +112,13 @@ namespace DoorToSomewhereMod.Patches
                 }
 
                 DoorToSomewhereBase.DoorToSomewherePrefab = normalDoorPrefab;
+
+                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} components in doorway to use as template:");
+                UnityEngine.Component[] components = doorwayToUse.GetComponents<UnityEngine.Component>();
+                foreach (UnityEngine.Component component in components)
+                {
+                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} component {component}");
+                }
 
                 DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} finished finding normal door prefab.");
 
@@ -282,102 +291,123 @@ namespace DoorToSomewhereMod.Patches
                 // Set doors to locations.
                 foreach (Doorway doorway in validDoorways)
                 {
-                    if (currentIndex >= numSpawnedDoorsToSomewhere)
+                    try
                     {
-                        // Finished setting doors.
-                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} finished spawning {numSpawnedDoorsToSomewhere} doors.");
-                        return;
-                    }
-
-                    bool locationUsed = false;
-                    Vector3 newLocation = doorway.transform.position + 5 * doorway.transform.forward;
-                    foreach (Vector3 doorLocation in doorToSomewhereLocations)
-                    {
-                        if (Vector3.Distance(doorLocation, newLocation) < 4f)
+                        if (currentIndex >= numSpawnedDoorsToSomewhere)
                         {
-                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway already used {newLocation} and {doorLocation}.");
-                            locationUsed = true;
-                            break;
+                            // Finished setting doors.
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} finished spawning {numSpawnedDoorsToSomewhere} doors.");
+                            return;
                         }
-                    }
 
-                    if (locationUsed)
+                        bool locationUsed = false;
+                        Vector3 newLocation = doorway.transform.position + 5 * doorway.transform.forward;
+                        foreach (Vector3 doorLocation in doorToSomewhereLocations)
+                        {
+                            if (Vector3.Distance(doorLocation, newLocation) < 4f)
+                            {
+                                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} doorway already used {newLocation} and {doorLocation}.");
+                                locationUsed = true;
+                                break;
+                            }
+                        }
+
+                        if (locationUsed)
+                        {
+                            // Doors too close to eachother.
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} door too close to another door, moving along.");
+                            continue;
+                        }
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} components in doorway to modify:");
+                        UnityEngine.Component[] components = doorway.GetComponents<UnityEngine.Component>();
+                        foreach (UnityEngine.Component component in components)
+                        {
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} component {component}");
+                        }
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} adding location {newLocation}.");
+                        doorToSomewhereLocations.Add(newLocation);
+
+                        GameObject sillyDoorContainer = doorway.GetComponentInChildren<SpawnSyncedObject>(true).transform.parent.gameObject;
+                        GameObject sillyDoor = GameObject.Instantiate(DoorToSomewhereBase.DoorToSomewherePrefab, doorway.transform);
+                        sillyDoor.transform.position = sillyDoorContainer.transform.position;
+                        sillyDoor.AddComponent<DoorToSomewhere>();
+                        DoorToSomewhere doorToSomewhere = sillyDoor.GetComponent<DoorToSomewhere>();
+
+                        if (doorToSomewhere == null)
+                        {
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} door not instantiated. Failed to get component.");
+                            continue;
+                        }
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} door instantiated.");
+
+                        if (DoorToSomewhereNetworker.SpawnWeights[5].Value == 4242)
+                        {
+                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} should debug door be added?");
+                            // Spawn a door by the ship for testing.
+                            if (currentIndex == 0)
+                            {
+                                sillyDoor.transform.position = new Vector3(-7f, 0f, -10f);
+                                DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} debug door added.");
+                            }
+                        }
+
+                        // Keep track of networking with indexs for each door.
+                        DoorToSomewhere.allDoors.Add(doorToSomewhere);
+                        doorToSomewhere.doorIndex = currentIndex;
+                        currentIndex++;
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} length of all doors {DoorToSomewhere.allDoors.Count}.");
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} messing with the wall behind the door.");
+
+                        // Turn off the wall behind the door to somewhere.
+                        GameObject wall = doorway.transform.GetChild(0).gameObject;
+                        //wall.SetActive(false);
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} collider checking.");
+
+                        // This might not be necessary!!
+                        /*
+                        foreach (Collider collider in Physics.OverlapBox(doorToSomewhere.frameBox.bounds.center, doorToSomewhere.frameBox.bounds.extents, Quaternion.identity))
+                        {
+                            if (collider.gameObject.name.Contains("Shelf"))
+                            {
+                                collider.gameObject.SetActive(false);
+                            }
+                        }
+                        */
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} mesh assignment.");
+
+                        MeshRenderer[] meshes = sillyDoor.GetComponentsInChildren<MeshRenderer>();
+                        foreach (MeshRenderer mesh in meshes)
+                        {
+                            foreach (Material material in mesh.materials)
+                            {
+                                // Make sure the wall shader is shared.
+                                material.shader = wall.GetComponentInChildren<MeshRenderer>(true).material.shader;
+                                material.renderQueue = wall.GetComponentInChildren<MeshRenderer>(true).material.renderQueue;
+                            }
+                        }
+
+                        wall.GetComponentInChildren<MeshRenderer>(true).material = Material.Instantiate(DoorToSomewhereBase.portalMaterial);
+
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} finished setting door {currentIndex}.");
+
+                        //doorToSomewhere.interactTrigger.onInteract = new InteractEvent();
+                        //doorToSomewhere.interactTrigger.onInteract.AddListener(doorToSomewhere.TouchDoor);
+
+                        // Could randomly assign different properties for door here.
+                    }
+                    catch (Exception e)
                     {
-                        // Doors too close to eachother.
-                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} door too close to another door, moving along.");
+                        LocalLogger.LogException(MethodBase.GetCurrentMethod(), e);
+                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} failed to set door {currentIndex} with {doorway}.");
                         continue;
                     }
-
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} adding location {newLocation}.");
-                    doorToSomewhereLocations.Add(newLocation);
-
-                    GameObject sillyDoorContainer = doorway.GetComponentInChildren<SpawnSyncedObject>(true).transform.parent.gameObject;
-                    GameObject sillyDoor = GameObject.Instantiate(DoorToSomewhereBase.DoorToSomewherePrefab, doorway.transform);
-                    sillyDoor.transform.position = sillyDoorContainer.transform.position;
-                    DoorToSomewhere doorToSomewhere = sillyDoor.GetComponent<DoorToSomewhere>();
-
-                    if (doorToSomewhere == null)
-                    {
-                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} door not instantiated. Failed to get component.");
-                        continue;
-                    }
-
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} door instantiated.");
-
-                    if (DoorToSomewhereNetworker.SpawnWeights[5].Value == 4242)
-                    {
-                        DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} should debug door be added?");
-                        // Spawn a door by the ship for testing.
-                        if (currentIndex == 0) 
-                        { 
-                            sillyDoor.transform.position = new Vector3(-7f, 0f, -10f);
-                            DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} debug door added.");
-                        }
-                    }
-
-                    // Keep track of networking with indexs for each door.
-                    DoorToSomewhere.allDoors.Add(doorToSomewhere);
-                    doorToSomewhere.doorIndex = currentIndex;
-                    currentIndex++;
-
-
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} messing with the wall behind the door.");
-
-                    // Turn off the wall behind the door to somewhere.
-                    GameObject wall = doorway.transform.GetChild(0).gameObject;
-                    wall.SetActive(false);
-
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} collider checking.");
-
-                    // This might not be necessary!!
-                    foreach (Collider collider in Physics.OverlapBox(doorToSomewhere.frameBox.bounds.center, doorToSomewhere.frameBox.bounds.extents, Quaternion.identity))
-                    {
-                        if (collider.gameObject.name.Contains("Shelf"))
-                        {
-                            collider.gameObject.SetActive(false);
-                        }
-                    }
-
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} mesh assignment.");
-
-                    MeshRenderer[] meshes = sillyDoor.GetComponentsInChildren<MeshRenderer>();
-                    foreach (MeshRenderer mesh in meshes)
-                    {
-                        foreach (Material material in mesh.materials)
-                        {
-                            // Make sure the wall shader is shared.
-                            material.shader = wall.GetComponentInChildren<MeshRenderer>(true).material.shader;
-                            material.renderQueue = wall.GetComponentInChildren<MeshRenderer>(true).material.renderQueue;
-                        }
-                    }
-
-                    DoorToSomewhereBase.logger.LogInfo($"Plugin {DoorToSomewhereBase.modName} finished setting door {currentIndex}.");
-
-                    //doorToSomewhere.interactTrigger.onInteract = new InteractEvent();
-                    //doorToSomewhere.interactTrigger.onInteract.AddListener(doorToSomewhere.TouchDoor);
-
-                    // Could randomly assign different properties for door here.
-
                 }
 
             }

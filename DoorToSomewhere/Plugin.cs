@@ -6,6 +6,8 @@ using System.Reflection;
 using UnityEngine;
 using DoorToSomewhereMod.Logger;
 using DoorToSomewhereMod.Configuration;
+using System.IO;
+using UnityEngine.Assertions;
 
 namespace DoorToSomewhereMod
 {
@@ -22,6 +24,7 @@ namespace DoorToSomewhereMod
         public static GameObject DoorToSomewherePrefab;
         public static GameObject DoorToSomewhereNetworkerPrefab;
         public static TerminalNode DoorToSomewhereFile;
+        public static Material portalMaterial;
 
         public static int[] SpawnRates;
         public static bool DynamicSpawnRate;
@@ -39,12 +42,40 @@ namespace DoorToSomewhereMod
                     Instance = this;
                 }
 
-                /*
-                AssetBundle doorToSomewhereBundle = AssetBundle.LoadFromMemory(LethalCompanyDoorToSomewhere.Properties.Resources.doorToSomewhere);
-                DoorToSomewherePrefab = doorToSomewhereBundle.LoadAsset<GameObject>("Assets/DoorToSomewhere.prefab");
-                DoorToSomewhereNetworkerPrefab = doorToSomewhereBundle.LoadAsset<GameObject>("Assets/DoorToSomewhereNetworker.prefab");
-                DoorToSomewhereFile = doorToSomewhereBundle.LoadAsset<TerminalNode>("Assets/DoorToSomewhereFile.asset");
-                */
+
+                //AssetBundle doorToSomewhereBundle = AssetBundle.LoadFromFile (Path.Combine(Application.streamingAssetsPath, "portal"));
+
+                //AssetBundle doorToSomewhereBundle = AssetBundle.LoadFromFile($"{Application.streamingAssetsPath}/Assets/portal");
+
+                AssetBundle doorToSomewhereBundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "portal"));
+
+                if (doorToSomewhereBundle == null)
+                {
+                    logger.LogInfo($"Plugin {modName} failed to load asset bundle.");
+                    throw new Exception("Failed to load asset bundle.");
+                }
+
+                logger.LogInfo($"Plugin {modName} loaded asset bundle successfully.");
+
+                //DoorToSomewherePrefab = doorToSomewhereBundle.LoadAsset<GameObject>("Assets/DoorToSomewhere.prefab");
+                //DoorToSomewhereNetworkerPrefab = doorToSomewhereBundle.LoadAsset<GameObject>("Assets/DoorToSomewhereNetworker.prefab");
+                //DoorToSomewhereFile = doorToSomewhereBundle.LoadAsset<TerminalNode>("Assets/DoorToSomewhereFile.asset");
+
+                portalMaterial = doorToSomewhereBundle.LoadAsset<Material>("Assets/Shaders/normal_portal_mat");
+                
+                if (portalMaterial == null)
+                {
+                    logger.LogInfo($"Plugin {modName} failed to load material.");
+
+                    portalMaterial = doorToSomewhereBundle.LoadAsset<Material>("Assets/Shaders/normal_portal_mat.mat");
+
+                    if (portalMaterial == null)
+                    {
+                        logger.LogInfo($"Plugin {modName} still failed to load material.");
+                        throw new Exception("Failed to load material.");
+                    }
+                }    
+
                 DoorToSomewherePrefab = null;
                 DoorToSomewhereNetworkerPrefab = null;
                 DoorToSomewhereFile = null;

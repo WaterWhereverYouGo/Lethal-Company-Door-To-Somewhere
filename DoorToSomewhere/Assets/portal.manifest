@@ -1,0 +1,26 @@
+ManifestFileVersion: 0
+CRC: 668415017
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 9cba2cbf875cde252a64f24e9395aa37
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 6ee55d1372e9665c4ae73fbe3eacdfc7
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 9cba2cbf875cde252a64f24e9395aa37
+HashAppended: 0
+ClassTypes:
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Shaders/normal_portal.shadergraph
+- Assets/Materials/normal_portal_mat.mat
+- Assets/Mesh/Portal_mesh.asset
+Dependencies: []
